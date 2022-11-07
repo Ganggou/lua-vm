@@ -114,7 +114,7 @@ func (vm *LuaVm) CallFunc(globalFuncName string, retCnt int, args ...lua.LValue)
 	}()
 
 	if err = thread.CallByParam(lua.P{
-		Fn:      vm.state.GetGlobal(globalFuncName),
+		Fn:      vm.GetGlobal(globalFuncName),
 		NRet:    retCnt,
 		Protect: true,
 	}, args...); err != nil {
