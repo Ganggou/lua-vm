@@ -18,7 +18,8 @@ type LuaVm struct {
 	stateMu     sync.RWMutex
 	threads     chan *lua.LState
 	threadCount int
-	threadMu    sync.Mutex
+	threadPeak  int
+	threadMu    sync.RWMutex
 }
 
 // GetLuaVm ...
@@ -34,6 +35,7 @@ func GetLuaVm() *LuaVm {
 		vm.threads <- thread
 	}
 	vm.threadCount = ThreadInitCount
+	vm.threadPeak = ThreadInitCount
 	return vm
 }
 
@@ -56,6 +58,9 @@ func (vm *LuaVm) NewThread() (thread *lua.LState) {
 	thread, _ = vm.state.NewThread()
 	vm.threadMu.Lock()
 	vm.threadCount++
+	if vm.threadCount > vm.threadPeak {
+		vm.threadPeak = vm.threadCount
+	}
 	vm.threadMu.Unlock()
 	return
 }
@@ -80,6 +85,20 @@ func (vm *LuaVm) PutThread(thread *lua.LState) {
 		vm.threadMu.Unlock()
 		thread.Close()
 	}
+}
+
+// GetThreadCount ...
+func (vm *LuaVm) GetThreadCount() int {
+	vm.threadMu.RLock()
+	defer vm.threadMu.RUnlock()
+	return vm.threadCount
+}
+
+// GetThreadPeak ...
+func (vm *LuaVm) GetThreadPeak() int {
+	vm.threadMu.RLock()
+	defer vm.threadMu.RUnlock()
+	return vm.threadPeak
 }
 
 // DoString ...
